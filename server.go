@@ -47,6 +47,10 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/reflection"
 	"google.golang.org/grpc/status"
+
+	"github.com/golang-migrate/migrate/v4"
+	_ "github.com/golang-migrate/migrate/v4/database/postgres"
+	_ "github.com/golang-migrate/migrate/v4/source/file"
 )
 
 const (
@@ -363,6 +367,8 @@ func main() {
 		network = &chaincfg.SimNetParams
 	case "testnet":
 		network = &chaincfg.TestNet3Params
+	case "regtest":
+		network = &chaincfg.RegressionNetParams
 	default:
 		network = &chaincfg.MainNetParams
 	}
@@ -440,6 +446,33 @@ func main() {
 		log.Println("redisConnect error:", err)
 	}
 	go deliverSyncNotifications()
+
+	// DB Migrations
+	log.Println("Starting migrations...")
+
+	migrationsPath, envSet := os.LookupEnv("MIGRATIONS_PATH")
+	if !envSet {
+		log.Fatalf("MIGRATIONS_PATH environment variable not set")
+	}
+
+	migrationsPath = fmt.Sprintf("file://%v", migrationsPath)
+
+	m, err := migrate.New(
+		migrationsPath,
+		os.Getenv("DATABASE_URL"))
+	if err != nil {
+		log.Fatal(err)
+	}
+	if err := m.Up(); err != nil {
+		if !strings.Contains(err.Error(), "no change") {
+			log.Fatal(err)
+		} else {
+			log.Println("No changes to apply")
+		}
+	}
+	log.Println("Migrations completed")
+
+	// Start the server
 
 	err = pgConnect()
 	if err != nil {
