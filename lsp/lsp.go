@@ -24,6 +24,7 @@ import (
 // Server implements lsp grpc functions
 type Server struct {
 	EmailNotifier func(provider, nid, txid string, index uint32) error
+	DBLSPList     func(keys []string) ([]string, error)
 }
 
 // lspdLSP represents the infos about a LSP running lspd
@@ -100,7 +101,17 @@ func loadConfig(reader io.Reader) error {
 // LSPList returns the list of active lsps
 func (s *Server) LSPList(ctx context.Context, in *breez.LSPListRequest) (*breez.LSPListReply, error) {
 	r := breez.LSPListReply{Lsps: make(map[string]*breez.LSPInformation)}
-	for id, c := range lspdClients {
+	keys := auth.GetHeaderKeys(ctx)
+	list, err := s.DBLSPList(keys)
+	if err != nil {
+		log.Printf("Error in DBLSPList(%#v): %v", keys, err)
+		return &r, fmt.Errorf("error in DBLSPList(%#v): %w", keys, err)
+	}
+	for _, id := range list {
+		c, ok := lspdClients[id]
+		if !ok {
+			continue
+		}
 		clientCtx := metadata.AppendToOutgoingContext(context.Background(), "authorization", "Bearer "+lspConf.LspdList[id].Token)
 		ci, err := c.ChannelInformation(clientCtx, &lspdrpc.ChannelInformationRequest{Pubkey: in.Pubkey})
 		if err != nil {
@@ -171,18 +182,38 @@ func (s *Server) OpenPublicChannel(ctx context.Context, in *breez.OpenPublicChan
 	return &breez.OpenPublicChannelReply{}, nil
 }
 
+func contains(s []string, str string) bool {
+	for _, v := range s {
+		if v == str {
+			return true
+		}
+	}
+
+	return false
+}
+
 // RegisterPayment sends information concerning a payment used by the LSP to open a channel
 func (s *Server) RegisterPayment(ctx context.Context, in *breez.RegisterPaymentRequest) (*breez.RegisterPaymentReply, error) {
 	lsp, ok := lspConf.LspdList[in.LspId]
 	if !ok {
-		return nil, status.Errorf(codes.NotFound, "Not found")
+		return nil, status.Errorf(codes.PermissionDenied, "Not authorized")
 	}
+	keys := auth.GetHeaderKeys(ctx)
+	lspList, err := s.DBLSPList(auth.GetHeaderKeys(ctx))
+	if err != nil {
+		log.Printf("Error in DBLSPList(%#v): %v", keys, err)
+		return nil, status.Errorf(codes.PermissionDenied, "Not authorized")
+	}
+	if !contains(lspList, in.LspId) {
+		return nil, status.Errorf(codes.PermissionDenied, "Not authorized")
+	}
+
 	lspdClient, ok := lspdClients[in.LspId]
 	if !ok {
 		return nil, status.Errorf(codes.NotFound, "Not found")
 	}
 	clientCtx := metadata.AppendToOutgoingContext(context.Background(), "authorization", "Bearer "+lsp.Token)
-	_, err := lspdClient.RegisterPayment(clientCtx, &lspdrpc.RegisterPaymentRequest{Blob: in.Blob})
+	_, err = lspdClient.RegisterPayment(clientCtx, &lspdrpc.RegisterPaymentRequest{Blob: in.Blob})
 	if err != nil {
 		return nil, err
 	}

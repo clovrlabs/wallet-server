@@ -26,6 +26,20 @@ func GetProvider(ctx context.Context) *string {
 	return provider
 }
 
+func GetHeaderKeys(ctx context.Context) []string {
+	var keys []string
+	if md, ok := metadata.FromIncomingContext(ctx); ok {
+		for _, auth := range md.Get("authorization") {
+			if strings.HasPrefix(auth, "Bearer ") {
+				if len(auth) > 7 {
+					keys = append(keys, auth[7:])
+				}
+			}
+		}
+	}
+	return keys
+}
+
 func UnaryAuth(prefix, token string) grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
 		if !strings.HasPrefix(info.FullMethod, prefix) {
