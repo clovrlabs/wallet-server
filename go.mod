@@ -10,7 +10,6 @@ require (
 	github.com/SparkPost/gosparkpost v0.0.0-20180607155248-1190f471ed9d // indirect
 	github.com/aws/aws-sdk-go v1.30.20
 	github.com/breez/boltz v0.0.0-20200114203444-0c01ddb93028
-	github.com/breez/lspd v0.0.0-20210616153301-b86a77ab6925
 	github.com/btcsuite/btcd v0.21.0-beta.0.20201208033208-6bd4c64a54fa
 	github.com/btcsuite/btcutil v1.0.2
 	github.com/btcsuite/go-flags v0.0.0-20150116065318-6c288d648c1c // indirect
@@ -32,13 +31,13 @@ require (
 	github.com/mojocn/base64Captcha v0.0.0-20190801020520-752b1cd608b2
 	github.com/pkg/errors v0.9.1
 	go.starlark.net v0.0.0-20200821142938-949cc6f4b097
-	golang.org/x/oauth2 v0.0.0-20211104180415-d3ed0bb246c8
-	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
-	golang.org/x/sys v0.1.0 // indirect
-	golang.org/x/text v0.3.7
-	google.golang.org/api v0.62.0
-	google.golang.org/grpc v1.45.0
-	google.golang.org/protobuf v1.27.1
+	golang.org/x/net v0.0.0-20200707034311-ab3426394381 // indirect
+	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
+	golang.org/x/sync v0.0.0-20200625203802-6e8e738ad208
+	golang.org/x/text v0.3.3
+	google.golang.org/api v0.29.0
+	google.golang.org/grpc v1.32.0
+	google.golang.org/protobuf v1.25.0
 )
 
 replace github.com/lightningnetwork/lnd => github.com/breez/lnd v0.12.1-beta.rc6.0.20210719131344-b444ae37125d
