@@ -372,6 +372,8 @@ func main() {
 	switch os.Getenv("NETWORK") {
 	case "simnet":
 		network = &chaincfg.SimNetParams
+	case "regtest":
+		network = &chaincfg.RegressionNetParams
 	case "testnet":
 		network = &chaincfg.TestNet3Params
 	default:
